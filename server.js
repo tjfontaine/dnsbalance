@@ -21,6 +21,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 */
 
 var dnsbalance = require('./lib/dnsbalance')
+var dnode = require('dnode')
 
 var srv = new dnsbalance.DNSBalance(5353)
 srv.loadZones(require('./zones.js').zones)
+
+var rpc = new dnode({
+  setLoad: function(domain, resource, node, load) {
+    console.log('set load', domain, resource, node, load)
+    srv.getZone(domain).getResource(resource).getNode(node).load = load
+  },
+})
+rpc.listen(5454)
