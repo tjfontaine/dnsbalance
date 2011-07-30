@@ -12,7 +12,9 @@ var zones = {
       'www': {
         type: 'a',
         ttl: 60,
-        handler: require('./lib/policy').LeastLoad(3),
+        handlers: [
+          require('./lib/policy').LeastLoad(3),
+        ],
         nodes: {
           node1: {
             ips: [ '127.0.0.1', '127.0.1.1' ],
