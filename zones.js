@@ -14,6 +14,7 @@ var zones = {
         ttl: 60,
         handlers: [
           require('./lib/policy').LeastLoad(3),
+          require('./lib/policy').LeastRecentlyUsed(1),
         ],
         nodes: {
           node1: {
