@@ -24,7 +24,7 @@ var dnsbalance = require('./lib/dnsbalance')
 var dnode = require('dnode')
 
 var srv = new dnsbalance.DNSBalance(5353)
-srv.loadZones(require('./zones.js').zones)
+srv.loadZones("./zones")
 
 var rpc = new dnode({
   setLoad: function(domain, resource, node, load) {
