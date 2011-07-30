@@ -33,3 +33,10 @@ var rpc = new dnode({
   },
 })
 rpc.listen(5454)
+
+function serializer() {
+  for (z in srv.zones) {
+    console.log(JSON.stringify(srv.getZone(z).toObject(), null, 2))
+  }
+}
+setInterval(serializer, 10 * 1000)
