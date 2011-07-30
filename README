@@ -1,1 +1,10 @@
 Generic DNS server to dynamically distribute load among a given set of resources
+
+GOALS
+ * add/remove/change zones on the fly
+ * add/remove/change resources on the fly
+ * add/remove/change nodes on the fly
+ * change policy for how nodes for a given resource are allocated on the fly
+ * discover peer balancers
+ * maintain persistent connections to peer balancers
+ * distribute/receive changes to zones/resources/nodes among peers
