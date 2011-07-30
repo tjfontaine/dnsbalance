@@ -1,3 +1,5 @@
+var Policy = require('./lib/policy').Policy
+
 var zones = {
   'fake.atxconsulting.com': {
     ttl: 300,
@@ -12,10 +14,12 @@ var zones = {
       'www': {
         type: 'a',
         ttl: 60,
-        handlers: [
-          require('./lib/policy').LeastLoad(3),
-          require('./lib/policy').LeastRecentlyUsed(1),
-        ],
+        handler: function(req, nodes, end) {
+          Policy(req, nodes)
+            .LeastLoad(3)
+            .LeastRecentlyUsed(1)
+            .done(end)
+        },
         nodes: {
           node1: {
             ips: [ '127.0.0.1', '127.0.1.1' ],
