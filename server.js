@@ -35,16 +35,20 @@ srv.loadZones("./zones")
 
 var rpc = new dnode({
   setLoad: function(domain, resource, node, load) {
-    wintston.info('set load', domain, resource, node, load)
+    wintston.info('set load: ' + [domain, resource, node, load].join(', '))
     srv.getZone(domain).getResource(resource).getNode(node).load = load
+  },
+  setTTL: function(domain, resource, ttl) {
+    winston.info('set ttl: ' + [domain, resource, ttl].join(', '))
+    srv.getZone(domain).getResource(resource).set('ttl', ttl)
   },
 })
 rpc.listen(5454)
 
-function serializer() {
-  for (z in srv.zones) {
-    winston.info('serailizing zone: ' + z)
-    fs.writeFile(path.join('./zones', z), JSON.stringify(srv.getZone(z).toObject(), null, 2))
-  }
-}
-setInterval(serializer, 60 * 1000)
+srv.on('zoneChanged', function(zone) {
+  winston.info('serailizing zone: ' + zone.name)
+  fs.writeFile(
+    path.join('./zones', zone.name),
+    JSON.stringify(zone.toObject(), null, 2)
+  )
+})
