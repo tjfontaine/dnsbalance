@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 var dnode = require('dnode')
 var fs = require('fs')
 var path = require('path')
+var util = require('util')
 var winston = require('winston')
 
 winston.remove(winston.transports.Console)
@@ -40,15 +41,17 @@ var rpc = new dnode({
   },
   setTTL: function(domain, resource, ttl) {
     winston.info('set ttl: ' + [domain, resource, ttl].join(', '))
-    srv.getZone(domain).getResource(resource).set('ttl', ttl)
+    srv.getZone(domain).getResource(resource)['ttl'] = ttl
   },
 })
 rpc.listen(5454)
 
 srv.on('zoneChanged', function(zone) {
   winston.info('serailizing zone: ' + zone.name)
+  var o = zone.toObject()
+  //winston.info(util.inspect(o))
   fs.writeFile(
     path.join('./zones', zone.name),
-    JSON.stringify(zone.toObject(), null, 2)
+    JSON.stringify(o, null, 2)
   )
 })
