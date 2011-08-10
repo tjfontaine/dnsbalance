@@ -27,31 +27,103 @@ var util = require('util')
 var winston = require('winston')
 
 winston.remove(winston.transports.Console)
-winston.add(winston.transports.Console, { colorize: true })
-
-var dnsbalance = require('./lib/dnsbalance')
-
-var srv = new dnsbalance.DNSBalance(5353)
-srv.loadZones("./zones")
-
-var rpc = new dnode({
-  setLoad: function(domain, resource, node, load) {
-    wintston.info('set load: ' + [domain, resource, node, load].join(', '))
-    srv.getZone(domain).getResource(resource).getNode(node).load = load
-  },
-  setTTL: function(domain, resource, ttl) {
-    winston.info('set ttl: ' + [domain, resource, ttl].join(', '))
-    srv.getZone(domain).getResource(resource)['ttl'] = ttl
-  },
+winston.add(winston.transports.Console, {
+  colorize: true,
+  timestamp: true,
 })
-rpc.listen(5454)
 
-srv.on('zoneChanged', function(zone) {
-  winston.info('serailizing zone: ' + zone.name)
-  var o = zone.toObject()
-  //winston.info(util.inspect(o))
-  fs.writeFile(
-    path.join('./zones', zone.name),
-    JSON.stringify(o, null, 2)
-  )
+var DNSBalance = require('./lib/dnsbalance')
+var Delegates = require('./lib/delegates')
+
+var RPC_PORT = 5454
+var DNS_PORT = 5353
+
+var srv = new DNSBalance(DNS_PORT)
+
+var delegates = new Delegates(RPC_PORT)
+
+function nodeAdded(node) {
+  winston.info('node.wireup: ' + node.name)
+
+  node.on('propagate', function(field, when, value) {
+    delegates.node_set_property(
+      this.parent.parent.name,
+      this.parent.name,
+      this.name,
+      field,
+      when,
+      value
+    )
+  });
+}
+
+function resourceAdded(resource) {
+  winston.info('resource.wireup: ' + resource.name)
+  resource.on('nodeAdded', nodeAdded)
+  resource.on('propagate', function(field, when, value) {
+    delegates.resource_set_property(
+      this.parent.name,
+      this.name,
+      field,
+      when,
+      value
+    )
+  });
+}
+
+function zoneAdded(zone) {
+  winston.info('zone.wireup: ' + zone.name)
+  zone.on('resourceAdded', resourceAdded)
+
+  zone.on('changed_serial', function(old, cur) {
+    winston.info('serailizing zone: ' + this.name)
+    var o = this.toObject()
+    fs.writeFile(
+      path.join('./zones', this.name),
+      JSON.stringify(o, null, 2)
+    )
+  });
+
+  zone.on('propagate', function(field, when, value) {
+    delegates.zone_set_property(
+      this.name,
+      field,
+      when,
+      value
+    )
+  });
+}
+
+srv.loadZones("./zones", function(zone) {
+  zone.getResources().forEach(function(resource) {
+    resourceAdded(resource)
+    resource.getNodes().forEach(function(node) {
+      nodeAdded(node)
+    })
+  })
 })
+
+srv.on('zoneAdded', zoneAdded)
+
+var rpc = new dnode(function(client, connection) {
+  delegates.add(connection.stream.remoteAddress)
+
+  this.zone_set_property = function(domain, property, when, value) {
+    srv.getZone(domain)
+      .onPropagate(property, when, value)
+  }
+
+  this.resource_set_property = function(domain, resource, property, value, cb) {
+    srv.getZone(domain)
+      .getResource(resource)
+      .onPropagate(property, when, value)
+  }
+
+  this.node_set_property = function(domain, resource, node, property, value, cb) {
+    srv.getZone(domain)
+      .getResource(resource)
+      .getNode(node)
+      .onPropagate(property, when, value)
+  }
+})
+rpc.listen(RPC_PORT)
