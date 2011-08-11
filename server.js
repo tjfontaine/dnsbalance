@@ -105,25 +105,28 @@ srv.loadZones("./zones", function(zone) {
 
 srv.on('zoneAdded', zoneAdded)
 
-var rpc = new dnode(function(client, connection) {
-  this.zone_set_property = function(domain, property, when, value) {
+var Hash = require('hashish')
+
+var rpc = new dnode({
+  zone_set_property: function(domain, property, when, value) {
+    winston.info('rpc zone_set_property: ' + util.inspect(arguments))
     srv.getZone(domain)
       .onPropagate(property, when, value)
-  }
-
-  this.resource_set_property = function(domain, resource, property, value, cb) {
+  },
+  resource_set_property: function(domain, resource, property, value, cb) {
+    winston.info('rpc resource_set_property: ' + util.inspect(arguments))
     srv.getZone(domain)
       .getResource(resource)
       .onPropagate(property, when, value)
-  }
-
-  this.node_set_property = function(domain, resource, node, property, value, cb) {
+  },
+  node_set_property: function(domain, resource, node, property, value, cb) {
+    winston.info('rpc node_set_property: ' + util.inspect(arguments))
     srv.getZone(domain)
       .getResource(resource)
       .getNode(node)
       .onPropagate(property, when, value)
-  }
+  },
 })
 rpc.listen(RPC_PORT, '0.0.0.0')
 
-//delegates.add('')
+delegates.add(process.argv[2])
