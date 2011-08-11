@@ -22,12 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 
 var dnode = require('dnode')
 
-if (process.argv.length != 5) {
-  console.log('run as: node statclient.js <zone> <resource> <ttl>')
-  process.exit(1)
-}
+var args = process.argv.slice(3)
+var f = process.argv[2]
 
-dnode.connect(5454, function(remote) {
-  remote.setTTL(process.argv[2], process.argv[3], process.argv[4])
-  process.exit()
+dnode.connect(5454, function(remote, connection) {
+  remote[f].apply(this, args)
 })

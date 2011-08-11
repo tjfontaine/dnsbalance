@@ -106,8 +106,6 @@ srv.loadZones("./zones", function(zone) {
 srv.on('zoneAdded', zoneAdded)
 
 var rpc = new dnode(function(client, connection) {
-  delegates.add(connection.stream.remoteAddress)
-
   this.zone_set_property = function(domain, property, when, value) {
     srv.getZone(domain)
       .onPropagate(property, when, value)
@@ -126,4 +124,6 @@ var rpc = new dnode(function(client, connection) {
       .onPropagate(property, when, value)
   }
 })
-rpc.listen(RPC_PORT)
+rpc.listen(RPC_PORT, '0.0.0.0')
+
+//delegates.add('')
