@@ -42,98 +42,36 @@ var argv = require('optimist')
 var DNSBalance = require('./lib/dnsbalance')
 var Delegates = require('./lib/delegates')
 var Config = require('./lib/configfile')
+var RPC = require('./lib/rpc')
 
 var config = new Config(argv.c)
 config.on('loaded', function() {
   var srv = new DNSBalance(this.query)
   var delegates = new Delegates(this.delegates)
 
-  function nodeAdded(node) {
-    winston.info('node.wireup: ' + node.name)
-
-    node.on('propagate', function(field, when, value) {
-      delegates.node_set_property(
-        this.parent.parent.name,
-        this.parent.name,
-        this.name,
-        field,
-        when,
-        value
-      )
-    });
-  }
-
-  function resourceAdded(resource) {
-    winston.info('resource.wireup: ' + resource.name)
-    resource.on('nodeAdded', nodeAdded)
-    resource.on('propagate', function(field, when, value) {
-      delegates.resource_set_property(
-        this.parent.name,
-        this.name,
-        field,
-        when,
-        value
-      )
-    });
-  }
-
-  function zoneAdded(zone) {
-    winston.info('zone.wireup: ' + zone.name)
-    zone.on('resourceAdded', resourceAdded)
-
-    zone.on('changed_serial', function(old, cur) {
-      winston.info('serailizing zone: ' + this.name)
-      var o = this.toObject()
-      fs.writeFile(
-        path.join('./zones', this.name),
-        JSON.stringify(o, null, 2)
-      )
-    });
-
-    zone.on('propagate', function(field, when, value) {
-      delegates.zone_set_property(
-        this.name,
-        field,
-        when,
-        value
-      )
-    });
-  }
-
-  srv.loadZones("./zones", function(zone) {
+  srv.loadZones(this.zones_directory, function(zone) {
     zone.getResources().forEach(function(resource) {
-      resourceAdded(resource)
+      delegates.resourceAdded(resource)
       resource.getNodes().forEach(function(node) {
-        nodeAdded(node)
+        delegates.nodeAdded(node)
       })
     })
   })
 
-  srv.on('zoneAdded', zoneAdded)
+  srv.on('zoneAdded', function(zone) { delegates.zoneAdded(zone) })
 
-  var Hash = require('hashish')
+  var self = this
 
-  this.rpc.forEach(function(r) {
-    var rpc = new dnode({
-      zone_set_property: function(domain, property, when, value) {
-        winston.info('rpc zone_set_property: ' + util.inspect(arguments))
-        srv.getZone(domain)
-          .onPropagate(property, when, value)
-      },
-      resource_set_property: function(domain, resource, property, value, cb) {
-        winston.info('rpc resource_set_property: ' + util.inspect(arguments))
-        srv.getZone(domain)
-          .getResource(resource)
-          .onPropagate(property, when, value)
-      },
-      node_set_property: function(domain, resource, node, property, value, cb) {
-        winston.info('rpc node_set_property: ' + util.inspect(arguments))
-        srv.getZone(domain)
-          .getResource(resource)
-          .getNode(node)
-          .onPropagate(property, when, value)
-      },
-    })
-    rpc.listen(r.port, r.ip)
+  srv.on('zoneAdded', function(zone) {
+    zone.on('changed_serial', function(old, cur) {
+      winston.info('serailizing zone: ' + this.name)
+      var o = this.toObject()
+      fs.writeFile(
+        path.join(self.zones_directory, this.name),
+        JSON.stringify(o, null, 2)
+      )
+    });
   })
+
+  this.rpc.forEach(function(r) { var rpc = new RPC(srv, r) })
 })
