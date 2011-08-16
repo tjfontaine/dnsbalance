@@ -55,7 +55,6 @@ config.on('loaded', function() {
     var to_send = srv.sendZones()
     remote.zone_exchange(to_send, function(remote_zones) {
       winston.info("received zones")
-      winston.info(util.inspect(remote_zones))
       srv.receiveZones(remote_zones)
     })
   })
