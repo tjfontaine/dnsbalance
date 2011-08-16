@@ -20,11 +20,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 
 */
 
-var dnode = require('dnode')
 var fs = require('fs')
 var path = require('path')
 var util = require('util')
 
+var dnode = require('dnode')
 var winston = require('winston')
 
 winston.remove(winston.transports.Console)
@@ -47,16 +47,17 @@ var RPC = require('./lib/rpc')
 var config = new Config(argv.c)
 config.on('loaded', function() {
   var srv = new DNSBalance(this.query)
+
   var delegates = new Delegates(this.delegates)
 
-  srv.loadZones(this.zones_directory, function(zone) {
-    zone.getResources().forEach(function(resource) {
-      delegates.resourceAdded(resource)
-      resource.getNodes().forEach(function(node) {
-        delegates.nodeAdded(node)
-      })
+  delegates.on('validated', function(remote) {
+    winston.info("exchanging zones")
+    remote.zone_exchange(srv.sendZones(), function(remote_zones) {
+      srv.receiveZones(remote_zones)
     })
   })
+
+  srv.loadZones(this.zones_directory)
 
   srv.on('zoneAdded', function(zone) { delegates.zoneAdded(zone) })
 
