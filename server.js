@@ -66,6 +66,7 @@ config.on('loaded', function() {
   var self = this
 
   srv.on('zoneAdded', function(zone) {
+    winston.info('wire serialization for: '+ zone.name)
     zone.on('changed_serial', function(old, cur) {
       winston.info('serailizing zone: ' + this.name)
       var o = this.toObject()
