@@ -25,6 +25,10 @@ var dnode = require('dnode')
 var args = process.argv.slice(3)
 var f = process.argv[2]
 
+var v = args.pop()
+args.push(new Date().getTime())
+args.push(v)
+
 dnode.connect(5454, function(remote, connection) {
   remote[f].apply(this, args)
 })
