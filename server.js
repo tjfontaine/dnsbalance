@@ -46,7 +46,7 @@ var RPC = require('./lib/rpc')
 
 var config = new Config(argv.c)
 config.on('loaded', function() {
-  var srv = new DNSBalance(this.query)
+  var srv = new DNSBalance(this)
 
   var delegates = new Delegates(this.delegates)
 
@@ -81,3 +81,5 @@ config.on('loaded', function() {
 
   this.rpc.forEach(function(r) { var rpc = new RPC(srv, r) })
 })
+
+winston.info("Hello World")
