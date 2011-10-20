@@ -20,15 +20,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 
 */
 
-var dnode = require('dnode')
+var dnode = require('dnode');
 
-var args = process.argv.slice(3)
-var f = process.argv[2]
+var args = process.argv.slice(3);
+var f = process.argv[2];
 
-var v = args.pop()
-args.push(new Date().getTime())
-args.push(v)
+var v = args.pop();
+args.push(new Date().getTime());
+args.push(v);
 
-dnode.connect(5454, function(remote, connection) {
-  remote[f].apply(this, args)
-})
+dnode.connect(5454, function (remote, connection) {
+  remote[f].apply(this, args);
+});

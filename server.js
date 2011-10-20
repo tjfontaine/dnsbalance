@@ -19,67 +19,71 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 
 */
+/*jshint debug:true */
 
-var fs = require('fs')
-var path = require('path')
-var util = require('util')
+var fs = require('fs');
+var path = require('path');
 
-var dnode = require('dnode')
-var winston = require('winston')
+var dnode = require('dnode');
+var winston = require('winston');
 
-winston.remove(winston.transports.Console)
+winston.remove(winston.transports.Console);
+
 winston.add(winston.transports.Console, {
   colorize: true,
-  timestamp: true,
-})
+  timestamp: true
+});
 
-var argv = require('optimist')
-  .default('c', path.join(path.dirname(__filename), 'config.js'))
+var optimist = require('optimist');
+
+var argv = optimist['default']('c', path.join(path.dirname(__filename), 'config.js'))
   .describe('c', 'Specify the config file')
   .alias('c', 'config')
-  .argv
+  .argv;
 
-var DNSBalance = require('./lib/dnsbalance')
-var Delegates = require('./lib/delegates')
-var Config = require('./lib/configfile')
-var RPC = require('./lib/rpc')
+var DNSBalance = require('./lib/dnsbalance');
+var Delegates = require('./lib/delegates');
+var Config = require('./lib/configfile');
+var RPC = require('./lib/rpc');
 
-var config = new Config(argv.c)
-config.on('loaded', function() {
-  var srv = new DNSBalance(this)
+var config = new Config(argv.c);
 
-  var delegates = new Delegates(this.delegates)
+config.on('loaded', function () {
+  "use strict";
 
-  delegates.on('validated', function(remote) {
-    winston.info("exchanging zones")
-    var to_send = srv.sendZones()
-    remote.zone_exchange(to_send, function(remote_zones) {
-      winston.info("received zones")
-      srv.receiveZones(remote_zones)
-    })
-  })
+  var srv, delegates, self = this;
 
-  srv.loadZones(this.zones_directory)
+  srv = new DNSBalance(this);
+  delegates = new Delegates(this.delegates);
 
-  srv.on('zoneAdded', function(zone) {
-    winston.info('Added Zone: ' + zone.name + ' (Serial: ' + zone.serial + ')')
-    delegates.zoneAdded(zone)
-  })
+  delegates.on('validated', function (remote) {
+    var to_send = srv.sendZones();
+    winston.info("exchanging zones");
+    remote.zone_exchange(to_send, function (remote_zones) {
+      winston.info("received zones");
+      srv.receiveZones(remote_zones);
+    });
+  });
 
-  var self = this
+  srv.loadZones(this.zones_directory);
 
-  srv.on('zoneAdded', function(zone) {
-    zone.on('changed_serial', function(old, cur) {
-      winston.info('serailizing zone: ' + this.name)
-      var o = this.toObject()
+  srv.on('zoneAdded', function (zone) {
+    winston.info('Added Zone: ' + zone.name + ' (Serial: ' + zone.serial + ')');
+    delegates.zoneAdded(zone);
+  });
+
+  srv.on('zoneAdded', function (zone) {
+    zone.on('changed_serial', function (old, cur) {
+      var o = this.toObject();
+      winston.info('serailizing zone: ' + this.name);
       fs.writeFile(
         path.join(self.zones_directory, this.name),
         JSON.stringify(o, null, 2)
-      )
+      );
     });
-  })
+  });
 
-  this.rpc.forEach(function(r) { var rpc = new RPC(srv, r) })
-})
+  this.rpc.forEach(function (r) { var rpc = new RPC(srv, r); });
+});
 
-winston.info("Hello World")
+winston.info("Hello World");
