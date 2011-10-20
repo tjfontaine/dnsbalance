@@ -72,6 +72,10 @@ config.on('loaded', function () {
     delegates.zoneAdded(zone);
   });
 
+  srv.on('zoneRemoved', function (zone) {
+    delegates.zone_del(zone);
+  });
+
   srv.on('zoneAdded', function (zone) {
     zone.on('changed_serial', function (old, cur) {
       var o = this.toObject();
