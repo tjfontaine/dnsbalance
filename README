@@ -8,3 +8,16 @@ GOALS
  * discover peer balancers
  * maintain persistent connections to peer balancers
  * distribute/receive changes to zones/resources/nodes among peers
+
+-- Dependencies --
+dnsbalance
+ * dnode
+ * winston
+ * optimist
+ * hashish
+ * chainsaw
+
+node-dns
+ * bufferjs
+ * https://github.com/tjfontaine/node-struct/tarball/master
+ * ipaddr.js
