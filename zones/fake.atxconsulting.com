@@ -1,6 +1,6 @@
 {
   "name": "fake.atxconsulting.com",
-  "soa": "tjfontaine.atxconsulting.com",
+  "email": "tjfontaine.atxconsulting.com",
   "ttl": 300,
   "delegates": {
     "ns1.fake.atxconsulting.com": {
@@ -13,6 +13,7 @@
   "resources": {
     "www": {
       "name": "www",
+      "type": "A",
       "ttl": 60,
       "handler": "handler = function (req, nodes, end) {\n          Policy(req, nodes)\n            .LeastLoad(3)\n            .LeastRecentlyUsed(1)\n            .done(end)\n        }",
       "nodes": {

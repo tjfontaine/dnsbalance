@@ -1,0 +1,30 @@
+{
+  "name": "dnsbalance",
+  "version": "0.0.1",
+  "author": "Timothy J Fontaine <tjfontaine@gmail.com> (http://atxconsulting.com)",
+  "description": "DNS Server with dynamic results",
+  "keywords": [
+    "dns",
+    "bind"
+  ],
+  "homepage": "http://github.com/tjfontaine/dnsbalance",
+  "bugs": {
+    "url": "http://github.com/tjfontaine/dnsbalance/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/tjfontaine/dnsbalance.git"
+  },
+  "main": "server.js",
+  "engines": {
+    "node": ">= 0.5.0"
+  },
+  "dependencies": {
+    "chainsaw": ">= 0.1.0",
+    "dnode": ">= 0.9.6",
+    "hashish": ">= 0.0.4",
+    "native-dns": ">= 0.0.2",
+    "optimist": ">= 0.3.1",
+    "winston": ">= 0.5.9"
+  }
+}
