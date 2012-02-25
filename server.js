@@ -21,11 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 */
 /*jshint debug:true */
 
-var fs = require('fs');
-var path = require('path');
+"use strict";
 
-var dnode = require('dnode');
-var winston = require('winston');
+var fs = require('fs'),
+  path = require('path'),
+  util = require('util'),
+  winston = require('winston'),
+  optimist = require('optimist'),
+  Config = require('./lib/configfile'),
+  DB = require('./lib/db'),
+  DNSBalance = require('./lib/dnsbalance');
 
 winston.remove(winston.transports.Console);
 
@@ -34,60 +39,37 @@ winston.add(winston.transports.Console, {
   timestamp: true
 });
 
-var optimist = require('optimist');
-
 var argv = optimist['default']('c', path.join(path.dirname(__filename), 'config.js'))
   .describe('c', 'Specify the config file')
   .alias('c', 'config')
   .argv;
 
-var DNSBalance = require('./lib/dnsbalance');
-var Delegates = require('./lib/delegates');
-var Config = require('./lib/configfile');
-var RPC = require('./lib/rpc');
-
 var config = new Config(argv.c);
 
 config.on('loaded', function () {
-  "use strict";
+  var srv, self = this;
 
-  var srv, delegates, self = this;
+  this.db = new DB(this.database);
+
+  fs.readdir(this.zones_directory, function (err, files) {
+    files.forEach(function (file) {
+      var p;
+      if (file.match(/.js$/i)) {
+        p = path.resolve(self.zones_directory, file);
+        winston.info(p);
+        fs.readFile(p, function (err, data) {
+          var zone = JSON.parse(data);
+          self.db.Zone.findOne()
+            .where('name', zone.name)
+            .remove(function (err, affected) {
+              winston.info(affected, 'removed');
+              var z = new self.db.Zone(zone);
+              z.save();
+            });
+        });
+      }
+    });
+  });
 
   srv = new DNSBalance(this);
-  delegates = new Delegates(this.delegates);
-
-  delegates.on('validated', function (remote) {
-    var to_send = srv.sendZones();
-    winston.info("exchanging zones");
-    remote.zone_exchange(to_send, function (remote_zones) {
-      winston.info("received zones");
-      srv.receiveZones(remote_zones);
-    });
-  });
-
-  srv.loadZones(this.zones_directory);
-
-  srv.on('zoneAdded', function (zone) {
-    winston.info('Added Zone: ' + zone.name + ' (Serial: ' + zone.serial + ')');
-    delegates.zoneAdded(zone);
-  });
-
-  srv.on('zoneRemoved', function (zone) {
-    delegates.zone_del(zone);
-  });
-
-  srv.on('zoneAdded', function (zone) {
-    zone.on('changed_serial', function (old, cur) {
-      var o = this.toObject();
-      winston.info('serailizing zone: ' + this.name);
-      fs.writeFile(
-        path.join(self.zones_directory, this.name),
-        JSON.stringify(o, null, 2)
-      );
-    });
-  });
-
-  this.rpc.forEach(function (r) { var rpc = new RPC(srv, r); });
 });
-
-winston.info("Hello World");
