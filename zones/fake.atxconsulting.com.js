@@ -5,7 +5,7 @@
   "resources": [
     {
       "name": "www",
-      "type": 1,
+      "type": "a",
       "ttl": 60,
       "handler": "LeastLoad(3).LeastRecentlyUsed(1)",
       "nodes": [

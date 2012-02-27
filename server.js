@@ -32,6 +32,8 @@ var fs = require('fs'),
   DB = require('./lib/db'),
   DNSBalance = require('./lib/dnsbalance');
 
+//require('long-stack-traces');
+
 winston.remove(winston.transports.Console);
 
 winston.add(winston.transports.Console, {
