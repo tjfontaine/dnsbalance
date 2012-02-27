@@ -52,6 +52,7 @@ config.on('loaded', function () {
   var srv, self = this;
 
   this.db = new DB(this.database);
+  this.zones = {};
 
   fs.readdir(this.zones_directory, function (err, files) {
     files.forEach(function (file) {
@@ -61,17 +62,31 @@ config.on('loaded', function () {
         winston.info(p);
         fs.readFile(p, function (err, data) {
           var zone = JSON.parse(data);
-          self.db.Zone.findOne()
+          self.db.Zone.find()
             .where('name', zone.name)
             .remove(function (err, affected) {
               winston.info(affected, 'removed');
               var z = new self.db.Zone(zone);
               z.save();
+              self.zones[z.name] = z.id;
+              winston.info('adding: ' + z.name + ' (' + z.id + ')');
             });
         });
       }
     });
   });
 
-  srv = new DNSBalance(this);
+  srv = new DNSBalance(self);
+
+  setInterval(function () {
+    self.db.Zone.find()
+      .where('name').nin(Object.keys(self.zones))
+      .only('name')
+      .run(function (err, data) {
+        data.forEach(function (z) {
+          self.zones[z.name] = z.id;
+          winston.info('adding: ' + z.name + ' (' + z.id + ')');
+        });
+      });
+  }, 30000);
 });
