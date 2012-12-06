@@ -1,10 +1,16 @@
 {
-  "query": [
-    {
-      "ip": "0.0.0.0",
-      "port": 5353
-    }
-  ],
-  "database": "mongodb://localhost/dnsbalance",
-  "zones_directory": "./zones"
+  query: [{
+    ip: '0.0.0.0',
+    port: 15353,
+  }],
+  serve: {
+    'example.com': {
+      type: 'master',
+      file: './zones/example.com.zone',
+    },
+    'example.net': {
+      type: 'master',
+      file: './zones/example.net.js',
+    },
+  },
 }
