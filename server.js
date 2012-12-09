@@ -59,22 +59,34 @@ config.on('loaded', function () {
     var cfg = self.serve[zonename];
     var zone, zonedata, p;
 
-    p = path.resolve(cfg.file);
+    winston.debug('Loading zone:', zonename);
 
-    winston.debug('Loading zone: ' + zonename + ' ' + p);
+    switch (cfg.type) {
+      case 'master':
+        p = path.resolve(cfg.file);
 
-    if (/.js$/i.test(p)) {
-      zonedata = fs.readFileSync(p);
-      zone = vm.runInThisContext('a = ' + zonedata.toString());
-      zone.name = zonename;
-    } else if (/.zone$/i.test(p)) {
-      zonedata = fs.readFileSync(p);
-      zone = BindParser(zonename, zonedata.toString());
-    } else {
-      winston.info('Invalid file type: ' + p);
+        if (/.js$/i.test(p)) {
+          zonedata = fs.readFileSync(p);
+          zone = vm.runInThisContext('a = ' + zonedata.toString());
+          zone.name = zonename;
+        } else if (/.zone$/i.test(p)) {
+          zonedata = fs.readFileSync(p);
+          zone = BindParser(zonename, zonedata.toString());
+        } else {
+          winston.info('Invalid file type: ' + p);
+        }
+        break;
+      case 'forward':
+        zone = {
+          name: zonename,
+        };
+        break;
     }
 
     if (zone) {
+      Object.keys(cfg).forEach(function (k) {
+        zone[k] = cfg[k];
+      });
       self.zones.add(zone, function (err, result) {
         winston.info('zone: ' + zonename + ' loaded');
       });

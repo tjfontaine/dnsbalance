@@ -22,5 +22,12 @@
       type: 'master',
       file: './zones/example.net.js',
     },
+    'example.us': {
+      type: 'forward',
+      forwarders: [
+        '192.168.1.100',
+        '192.168.1.101',
+      ],
+    },
   },
 }
